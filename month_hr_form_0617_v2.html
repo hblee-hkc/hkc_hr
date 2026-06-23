@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>월별 프로젝트 현황 입력</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:#f5f5f5;padding:1rem}
+.wrap{padding:0.75rem 0;max-width:900px;margin:0 auto}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem;flex-wrap:wrap;gap:8px}
+.top-title{font-size:15px;font-weight:500;color:#111}
+.top-sub{font-size:11px;color:#888}
+.top-controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ctrl-group{display:flex;align-items:center;gap:5px}
+.ctrl-group label{font-size:11px;color:#888;white-space:nowrap}
+.ctrl-group select{padding:4px 8px;border:0.5px solid #ccc;border-radius:6px;font-size:12px;background:#fff;color:#111}
+.divider{width:0.5px;height:20px;background:#ddd}
+.metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.mc{background:#f0f0f0;border-radius:6px;padding:8px;text-align:center}
+.mc-label{font-size:10px;color:#888;margin-bottom:2px}
+.mc-val{font-size:18px;font-weight:500;color:#111}
+.mc-val.hi{color:#0F6E56}
+.mc-val.warn{color:#BA7517}
+.grid-main{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.card{background:#fff;border:0.5px solid #ddd;border-radius:8px;padding:10px 12px}
+.card-title{font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:5px;border-bottom:0.5px solid #eee}
+.fields{display:grid}
+.fields.cols2{grid-template-columns:1fr 1fr}
+.fields.cols3{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:2px}
+.fg label{font-size:10px;color:#888}
+.fg input,.fg textarea,.fg select{background:#f5f5f5;border:0.5px solid #ccc;border-radius:6px;padding:4px 7px;font-size:12px;color:#111;width:100%;height:28px}
+.fg textarea{height:48px;resize:vertical}
+.fg input.ro{background:#eee;color:#aaa;cursor:not-allowed}
+.badge{display:inline-block;font-size:9px;background:#E1F5EE;color:#0F6E56;border-radius:3px;padding:1px 5px;margin-left:4px;vertical-align:middle}
+.submit-btn{width:100%;padding:9px;background:#111;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;margin-top:2px}
+.submit-btn:hover{opacity:.85}
+.submit-btn:disabled{opacity:.4;cursor:not-allowed}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:10px;padding:1.5rem;width:320px;max-width:90%}
+.modal-title{font-size:14px;font-weight:500;color:#111;margin-bottom:1rem}
+.modal-info{background:#f5f5f5;border-radius:6px;padding:10px 12px;margin-bottom:1rem;font-size:12px;color:#444;line-height:1.9}
+.modal-info span{font-weight:500;color:#111}
+.modal-status{font-size:12px;color:#888;text-align:center;margin-bottom:1rem;min-height:18px}
+.modal-status.submitting{color:#BA7517}
+.modal-status.done{color:#0F6E56}
+.modal-btns{display:flex;gap:8px}
+.modal-btn{flex:1;padding:8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:0.5px solid #ccc;background:#fff;color:#111}
+.modal-btn:hover{background:#f0f0f0}
+.modal-btn.confirm{background:#111;color:#fff;border-color:#111}
+.modal-btn.confirm:hover{opacity:.85}
+.modal-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── 레이아웃 ── */
+.layout-wide .outer{display:flex;gap:12px;align-items:flex-start;max-width:1600px;margin:0 auto}
+.layout-wide.view-closed .pane-form{flex:0 0 900px;margin:0 auto}
+.layout-wide.view-open .pane-form{flex:0 0 900px}
+.layout-wide .pane-view{flex:1;min-width:0;display:none}
+.layout-wide.view-open .pane-view{display:block}
+.layout-narrow .outer{max-width:900px;margin:0 auto}
+.layout-narrow .pane-view{display:none}
+.layout-narrow.view-open .pane-form{display:none}
+.layout-narrow.view-open .pane-view{display:block}
+.pane-form,.pane-view{transition:all .3s ease}
+
+/* ── 조회 버튼 ── */
+.btn-view{padding:4px 10px;border:0.5px solid #ccc;border-radius:6px;font-size:12px;background:#fff;color:#111;cursor:pointer;white-space:nowrap}
+.btn-view:hover{background:#f0f0f0}
+
+/* ── 조회 패널 ── */
+.view-card{background:#fff;border:0.5px solid #ddd;border-radius:8px;padding:10px 12px}
+.view-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px}
+.view-title{font-size:10px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.05em}
+.view-controls{display:flex;gap:6px;align-items:center}
+.view-controls select{padding:3px 7px;border:0.5px solid #ccc;border-radius:6px;font-size:11px;background:#fff;color:#111}
+.view-controls button{padding:3px 10px;border:0.5px solid #ccc;border-radius:6px;font-size:11px;background:#fff;color:#111;cursor:pointer}
+.view-controls button:hover{background:#f0f0f0}
+.view-empty{font-size:12px;color:#aaa;text-align:center;padding:2rem 0}
+.view-loading{font-size:12px;color:#888;text-align:center;padding:2rem 0}
+.view-err{font-size:12px;color:#c0392b;text-align:center;padding:1rem 0}
+
+/* ── 월별 레코드 블록 (폼 형태) ── */
+.rec-block{margin-bottom:16px}
+.rec-block:last-child{margin-bottom:0}
+.rec-ym-divider{font-size:11px;font-weight:500;color:#888;padding:4px 0;margin-bottom:8px;border-bottom:0.5px solid #ddd;display:flex;align-items:center;justify-content:space-between}
+.rec-metric-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}
+.rec-mc{background:#f0f0f0;border-radius:6px;padding:6px 8px;text-align:center}
+.rec-mc-label{font-size:10px;color:#888;margin-bottom:2px}
+.rec-mc-val{font-size:15px;font-weight:500;color:#111}
+.rec-mc-val.hi{color:#0F6E56}
+.rec-mc-val.warn{color:#BA7517}
+.rec-memo{margin-top:4px;padding:8px 10px;background:#fff;border:0.5px solid #ddd;border-radius:8px;font-size:11px;color:#666;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="root">
+<div class="outer">
+  <div class="pane-form">
+  <div class="wrap">
+  <div class="top-bar">
+    <div>
+      <div class="top-title">월별 프로젝트 현황 입력</div>
+      <div class="top-sub">*항목은 필수 입력 항목입니다.</div>
+    </div>
+    <div class="top-controls">
+      <div class="ctrl-group">
+        <label>프로젝트</label>
+        <select id="sel-project">
+          <option value="">--- 선택 ---</option>
+          <option>KEIT R&amp;D 콜센터</option>
+          <option>KGM</option>
+          <option>경기도 광역이동지원센터</option>
+          <option>공영홈쇼핑 IT헬프데스크</option>
+          <option>굿웨어몰 컨택센터</option>
+          <option>농업e지 콜센터</option>
+          <option>라온시큐어 고객센터</option>
+          <option>사람인 센터</option>
+          <option>사회보장정보원 고객상담센터</option>
+          <option>삼성화재</option>
+          <option>오텍캐리어 고객센터</option>
+          <option>온실가스헬프데스크</option>
+          <option>이베코그룹코리아</option>
+          <option>일동생활건강</option>
+          <option>장애인평생교육이용권</option>
+          <option>전자카드제전담콜센터</option>
+          <option>중앙모니터링센터</option>
+          <option>트레이드 콜센터</option>
+          <option>풀리오 고객센터</option>
+          <option>학점은행제독학학위제 고객센터</option>
+          <option>한국예술인복지재단</option>
+        </select>
+      </div>
+      <div class="divider"></div>
+      <div class="ctrl-group">
+        <label>입력 년월</label>
+        <select id="sel-period"></select>
+      </div>
+    </div>
+    <button class="btn-view" id="btn-view" onclick="toggleView()">기록 조회</button>
+  </div>
+
+  <div class="grid-main">
+    <div class="card">
+      <div class="card-title">* TO / PO (인원 현황)</div>
+      <div class="fields cols3">
+        <div class="fg"><label>TO (정원)</label><input type="number" id="to" placeholder="명" oninput="calc()"></div>
+        <div class="fg"><label>PO (현원)</label><input type="number" id="po" placeholder="명" oninput="calc()"></div>
+        <div class="fg"><label>총원율 <span class="badge">자동</span></label><input type="text" id="fill-rate" class="ro" readonly placeholder="자동"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">* 좌석가동율</div>
+      <div class="fields cols3">
+        <div class="fg"><label>총 좌석 수</label><input type="number" id="seat-total" placeholder="석" oninput="calc()"></div>
+        <div class="fg"><label>실제 사용 좌석</label><input type="number" id="seat-used" placeholder="석" oninput="calc()"></div>
+        <div class="fg"><label>좌석가동율 <span class="badge">자동</span></label><input type="text" id="seat-rate" class="ro" readonly placeholder="자동"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-main">
+    <div class="card">
+      <div class="card-title">* 직접인건비</div>
+      <div class="fields cols2">
+        <div class="fg"><label>직접비 청구액 (원)</label><input type="text" id="labor-budget" placeholder="예: 50,000,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>급여지급액 (원)</label><input type="text" id="labor-actual" placeholder="예: 48,000,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>직접인건비율 <span class="badge">자동</span></label><input type="text" id="labor-rate" class="ro" readonly placeholder="자동"></div>
+        <div class="fg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">교육비</div>
+      <div class="fields cols2">
+        <div class="fg"><label>전월 (원)</label><input type="text" id="edu-budget" placeholder="예: 5,000,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>당월 (원)</label><input type="text" id="edu-actual" placeholder="예: 4,200,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>전월 대비 <span class="badge">자동</span></label><input type="text" id="edu-rate" class="ro" readonly placeholder="자동"></div>
+        <div class="fg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-main">
+    <div class="card">
+      <div class="card-title">시스템</div>
+      <div class="fields cols2">
+        <div class="fg"><label>계약 (원)</label><input type="text" id="sys-contract" placeholder="예: 5,000,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>당월 (원)</label><input type="text" id="sys-current" placeholder="예: 4,200,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>계약대비 <span class="badge">자동</span></label><input type="text" id="sys-rate" class="ro" readonly placeholder="자동"></div>
+        <div class="fg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">ASP (좌석사용비)</div>
+      <div class="fields cols2">
+        <div class="fg"><label>계약 (원)</label><input type="text" id="asp-contract" placeholder="예: 5,000,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>당월 (원)</label><input type="text" id="asp-current" placeholder="예: 4,200,000" oninput="formatNumber(this)"></div>
+        <div class="fg"><label>계약대비 <span class="badge">자동</span></label><input type="text" id="asp-rate" class="ro" readonly placeholder="자동"></div>
+        <div class="fg"></div>
+      </div>
+    </div>
+  </div>
+
+<div class="grid-main">
+    <div class="card">
+      <div class="card-title">이직율 <span class="badge">자동계산</span></div>
+      <div class="fields cols2">
+        <div class="fg"><label>당월 퇴직자</label><input type="number" id="resigned" placeholder="명" oninput="calc()"></div>
+        <div class="fg"><label>전체인원 (PO연동)</label><input type="text" id="total-linked" class="ro" readonly placeholder="자동"></div>
+        <div class="fg"><label>이직율 <span class="badge">자동</span></label><input type="text" id="turnover" class="ro" readonly placeholder="자동"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">비고</div>
+      <div class="fields">
+        <div class="fg"><textarea id="memo" placeholder="특이사항, 설명 등 자유롭게 입력하세요"></textarea></div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="metric-row">
+    <div class="mc"><div class="mc-label">총원율</div><div class="mc-val hi" id="d-fill">— %</div></div>
+    <div class="mc"><div class="mc-label">직접인건비율</div><div class="mc-val hi" id="d-labor">— %</div></div>
+    <div class="mc"><div class="mc-label">좌석가동율</div><div class="mc-val warn" id="d-seat">— %</div></div>
+  </div>
+
+  <button class="submit-btn" id="submit-btn" onclick="openModal()">제출하기</button>
+</div><!-- /wrap -->
+</div><!-- /pane-form -->
+
+<!-- 조회 패널 -->
+<div class="pane-view" id="pane-view">
+  <div class="view-card">
+    <div class="view-top">
+      <div class="view-title">제출 기록</div>
+      <div class="view-controls">
+        <select id="view-range">
+          <option value="year">올해 전체</option>
+          <option value="3">최근 3개월</option>
+          <option value="6">최근 6개월</option>
+          <option value="12">최근 12개월</option>
+        </select>
+        <button onclick="loadRecords()">조회</button>
+        <button onclick="toggleView()">닫기</button>
+      </div>
+    </div>
+    <div id="view-body">
+      <div class="view-empty">프로젝트를 선택하면<br>기록을 조회할 수 있습니다.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /outer -->
+</div><!-- /root -->
+
+<!-- 모달 -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-title">제출 내용을 확인해주세요</div>
+    <div class="modal-info">
+      <div>프로젝트: <span id="modal-project"></span></div>
+      <div>년월: <span id="modal-yearmonth"></span></div>
+    </div>
+    <div class="modal-status" id="modal-status"></div>
+    <div class="modal-btns">
+      <button class="modal-btn" id="cancel-btn" onclick="closeModal()">취소</button>
+      <button class="modal-btn confirm" id="confirm-btn" onclick="doSubmit()">제출</button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.addEventListener('load', function() {
+  const selPeriod = document.getElementById('sel-period');
+  selPeriod.innerHTML = '';
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1~12
+
+  for (let m = 1; m <= currentMonth; m++) {
+    const opt = document.createElement('option');
+    opt.value = currentYear + '-' + m;
+    opt.textContent = currentYear + '년 ' + m + '월';
+    selPeriod.appendChild(opt);
+  }
+  // 기본값 당월
+  selPeriod.selectedIndex = selPeriod.options.length - 1;
+});
+
+function formatNumber(input) {
+  let val = input.value.replace(/[^0-9]/g, '');
+  input.value = val ? parseInt(val).toLocaleString('ko-KR') : '';
+  calc();
+}
+
+function calc() {
+  var to = parseFloat(document.getElementById('to').value) || 0;
+  var po = parseFloat(document.getElementById('po').value) || 0;
+  var lb = parseFloat(document.getElementById('labor-budget').value.replace(/,/g, '')) || 0;
+  var la = parseFloat(document.getElementById('labor-actual').value.replace(/,/g, '')) || 0;
+  var eb = parseFloat(document.getElementById('edu-budget').value.replace(/,/g, '')) || 0;
+  var ea = parseFloat(document.getElementById('edu-actual').value.replace(/,/g, '')) || 0;
+  var sco = parseFloat(document.getElementById('sys-contract').value.replace(/,/g, '')) || 0;
+  var scu = parseFloat(document.getElementById('sys-current').value.replace(/,/g, '')) || 0;
+  var aco = parseFloat(document.getElementById('asp-contract').value.replace(/,/g, '')) || 0;
+  var acu = parseFloat(document.getElementById('asp-current').value.replace(/,/g, '')) || 0;
+  var st = parseFloat(document.getElementById('seat-total').value) || 0;
+  var su = parseFloat(document.getElementById('seat-used').value) || 0;
+  var rs = parseFloat(document.getElementById('resigned').value) || 0;
+
+  var fillRate = to > 0 ? (po / to * 100).toFixed(1) : '';
+  var laborRate = lb > 0 ? (la / lb * 100).toFixed(1) : '';
+  var eduRate = eb > 0 ? (ea / eb * 100).toFixed(1) : '';
+  var sysRate = sco > 0 ? (scu / sco * 100).toFixed(1) : '';
+  var aspRate = aco > 0 ? (acu / aco * 100).toFixed(1) : '';
+  var seatRate = st > 0 ? (su / st * 100).toFixed(1) : '';
+  var turnover = po > 0 ? (rs / po * 100).toFixed(1) : '';
+
+  document.getElementById('fill-rate').value = fillRate ? fillRate + '%' : '';
+  document.getElementById('labor-rate').value = laborRate ? laborRate + '%' : '';
+  document.getElementById('edu-rate').value = eduRate ? eduRate + '%' : '';
+  document.getElementById('sys-rate').value = sysRate ? sysRate + '%' : '';
+  document.getElementById('asp-rate').value = aspRate ? aspRate + '%' : '';
+  document.getElementById('seat-rate').value = seatRate ? seatRate + '%' : '';
+  document.getElementById('total-linked').value = po > 0 ? po + '명' : '';
+  document.getElementById('turnover').value = turnover ? turnover + '%' : '';
+
+  document.getElementById('d-fill').textContent = fillRate ? fillRate + '%' : '— %';
+  document.getElementById('d-labor').textContent = laborRate ? laborRate + '%' : '— %';
+  document.getElementById('d-seat').textContent = seatRate ? seatRate + '%' : '— %';
+}
+
+function openModal() {
+  if (!document.getElementById('sel-project').value) {
+    alert('프로젝트를 선택해주세요.'); return;
+  }
+  var required = ['to', 'po', 'labor-budget', 'labor-actual', 'seat-total', 'seat-used'];
+  var ok = required.every(function(id) { return document.getElementById(id).value !== ''; });
+  if (!ok) { alert('모든 필수 항목을 입력해주세요.'); return; }
+
+  var project = document.getElementById('sel-project').value;
+  var period = document.getElementById('sel-period');
+
+  
+  document.getElementById('modal-project').textContent = project;
+  document.getElementById('modal-yearmonth').textContent = period.options[period.selectedIndex].textContent;
+  document.getElementById('modal-status').textContent = '';
+  document.getElementById('modal-status').className = 'modal-status';
+  document.getElementById('confirm-btn').style.display = '';
+  document.getElementById('confirm-btn').disabled = false;
+  document.getElementById('cancel-btn').disabled = false;
+  document.getElementById('cancel-btn').textContent = '취소';
+  document.getElementById('modal-overlay').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+}
+
+function doSubmit() {
+  document.getElementById('confirm-btn').disabled = true;
+  document.getElementById('cancel-btn').disabled = true;
+  var statusEl = document.getElementById('modal-status');
+  statusEl.textContent = '제출 중...';
+  statusEl.className = 'modal-status submitting';
+
+  fetch("https://script.google.com/macros/s/AKfycbzaAT_VYqn5Z7eUVCPAnJLa70AlkUmHD2fg4BcWBR3Om9kiyLqeVXTZ7H1-SPw0CkYZEA/exec", {
+    method: "POST",
+    body: JSON.stringify({
+      project: document.getElementById('sel-project').value,
+      yearMonth: document.getElementById('sel-period').value,
+      to: document.getElementById('to').value,
+      po: document.getElementById('po').value,
+      fillRate: document.getElementById('fill-rate').value,
+      laborBudget: parseInt(document.getElementById('labor-budget').value.replace(/,/g, '')) || 0,
+      laborActual: parseInt(document.getElementById('labor-actual').value.replace(/,/g, '')) || 0,
+      laborRate: document.getElementById('labor-rate').value,
+      eduBudget: parseInt(document.getElementById('edu-budget').value.replace(/,/g, '')) || 0,
+      eduActual: parseInt(document.getElementById('edu-actual').value.replace(/,/g, '')) || 0,
+      eduRate: document.getElementById('edu-rate').value,
+      aspContract: parseInt(document.getElementById('asp-contract').value.replace(/,/g, '')) || 0,
+      aspCurrent: parseInt(document.getElementById('asp-current').value.replace(/,/g, '')) || 0,
+      aspRate: document.getElementById('asp-rate').value,
+      sysContract: parseInt(document.getElementById('sys-contract').value.replace(/,/g, '')) || 0,
+      sysCurrent: parseInt(document.getElementById('sys-current').value.replace(/,/g, '')) || 0,
+      sysRate: document.getElementById('sys-rate').value,
+      seatTotal: document.getElementById('seat-total').value,
+      seatUsed: document.getElementById('seat-used').value,
+      seatRate: document.getElementById('seat-rate').value,
+      resigned: document.getElementById('resigned').value,
+      turnover: document.getElementById('turnover').value,
+      memo: document.getElementById('memo').value,
+      userAgent: navigator.userAgent,
+      resolution: screen.width + 'x' + screen.height,
+      clientTime: new Date().toISOString()
+    })
+  })
+  .then(function() {
+    statusEl.textContent = '제출이 완료되었습니다!';
+    statusEl.className = 'modal-status done';
+    document.getElementById('cancel-btn').disabled = false;
+    document.getElementById('cancel-btn').textContent = '닫기';
+    document.getElementById('confirm-btn').style.display = 'none';
+  })
+  .catch(function() {
+    statusEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
+    statusEl.className = 'modal-status';
+    document.getElementById('confirm-btn').disabled = false;
+    document.getElementById('cancel-btn').disabled = false;
+  });
+}
+</script>
+
+<script>
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbzaAT_VYqn5Z7eUVCPAnJLa70AlkUmHD2fg4BcWBR3Om9kiyLqeVXTZ7H1-SPw0CkYZEA/exec';
+var WIDE_BP = 1200;
+var viewOpen = false;
+
+function applyLayout() {
+  var root = document.getElementById('root');
+  var isWide = window.innerWidth >= WIDE_BP;
+  root.className = isWide ? ('layout-wide ' + (viewOpen ? 'view-open' : 'view-closed'))
+                          : ('layout-narrow ' + (viewOpen ? 'view-open' : ''));
+  var btnView = document.getElementById('btn-view');
+  if (!isWide) {
+    btnView.textContent = viewOpen ? '← 입력' : '기록 조회';
+  } else {
+    btnView.textContent = viewOpen ? '조회 닫기' : '기록 조회';
+  }
+}
+
+window.addEventListener('resize', applyLayout);
+window.addEventListener('load', function() { applyLayout(); });
+
+function toggleView() {
+  var project = document.getElementById('sel-project').value;
+  if (!viewOpen && !project) {
+    alert('프로젝트를 선택해주세요.'); return;
+  }
+  viewOpen = !viewOpen;
+  applyLayout();
+  if (viewOpen && project) { loadRecords(); }
+}
+
+function buildRangeFilter(rangeVal) {
+  var now = new Date();
+  if (rangeVal === 'year') {
+    return { type: 'year', year: now.getFullYear() };
+  }
+  var n = parseInt(rangeVal);
+  var months = [];
+  for (var i = 0; i < n; i++) {
+    var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(d.getFullYear() + '-' + (d.getMonth() + 1));
+  }
+  return { type: 'months', months: months };
+}
+
+function filterRecords(records, rangeFilter) {
+  return records.filter(function(r) {
+    var ym = r.yearMonth;
+    if (rangeFilter.type === 'year') return ym.split('-')[0] === String(rangeFilter.year);
+    return rangeFilter.months.indexOf(ym) !== -1;
+  });
+}
+
+function renderRecords(records) {
+  if (!records || records.length === 0) {
+    return '<div class="view-empty">해당 기간에 제출된 기록이 없습니다.</div>';
+  }
+  records.sort(function(a, b) {
+    var pa = a.yearMonth.split('-').map(Number);
+    var pb = b.yearMonth.split('-').map(Number);
+    return pa[0] !== pb[0] ? pb[0] - pa[0] : pb[1] - pa[1];
+  });
+  return records.map(function(r) {
+    var ymParts = r.yearMonth.split('-');
+    var ymLabel = ymParts[0] + '년 ' + ymParts[1] + '월';
+    var ro = ' class="ro" readonly';
+    function field(label, val) {
+      return '<div class="fg"><label>' + label + '</label><input type="text"' + ro + ' value="' + val + '"></div>';
+    }
+    function fieldBadge(label, val) {
+      return '<div class="fg"><label>' + label + ' <span class="badge">자동</span></label><input type="text"' + ro + ' value="' + val + '"></div>';
+    }
+    function money(v) { var n = parseInt(v); return isNaN(n) || n === 0 ? '' : n.toLocaleString('ko-KR'); }
+    return '<div class="rec-block">'
+      + '<div class="rec-ym-divider"><span>' + ymLabel + '</span></div>'
+      + '<div class="rec-metric-row">'
+      + '  <div class="rec-mc"><div class="rec-mc-label">총원율</div><div class="rec-mc-val hi">' + (r.fillRate || '— %') + '</div></div>'
+      + '  <div class="rec-mc"><div class="rec-mc-label">직접인건비율</div><div class="rec-mc-val hi">' + (r.laborRate || '— %') + '</div></div>'
+      + '  <div class="rec-mc"><div class="rec-mc-label">좌석가동율</div><div class="rec-mc-val warn">' + (r.seatRate || '— %') + '</div></div>'
+      + '</div>'
+      + '<div class="grid-main">'
+      + '  <div class="card"><div class="card-title">TO / PO (인원 현황)</div>'
+      + '    <div class="fields cols3">'
+      + field('TO (정원)', r.to)
+      + field('PO (현원)', r.po)
+      + fieldBadge('총원율', r.fillRate)
+      + '    </div></div>'
+      + '  <div class="card"><div class="card-title">좌석가동율</div>'
+      + '    <div class="fields cols3">'
+      + field('총 좌석 수', r.seatTotal)
+      + field('실제 사용 좌석', r.seatUsed)
+      + fieldBadge('좌석가동율', r.seatRate)
+      + '    </div></div>'
+      + '</div>'
+      + '<div class="grid-main">'
+      + '  <div class="card"><div class="card-title">직접인건비</div>'
+      + '    <div class="fields cols2">'
+      + field('직접비 청구액 (원)', money(r.laborBudget))
+      + field('급여지급액 (원)', money(r.laborActual))
+      + fieldBadge('직접인건비율', r.laborRate)
+      + '<div class="fg"></div>'
+      + '    </div></div>'
+      + '  <div class="card"><div class="card-title">교육비</div>'
+      + '    <div class="fields cols2">'
+      + field('전월 (원)', money(r.eduBudget))
+      + field('당월 (원)', money(r.eduActual))
+      + fieldBadge('전월 대비', r.eduRate)
+      + '<div class="fg"></div>'
+      + '    </div></div>'
+      + '</div>'
+      + '<div class="grid-main">'
+      + '  <div class="card"><div class="card-title">시스템</div>'
+      + '    <div class="fields cols2">'
+      + field('계약 (원)', money(r.sysContract))
+      + field('당월 (원)', money(r.sysCurrent))
+      + fieldBadge('계약대비', r.sysRate)
+      + '<div class="fg"></div>'
+      + '    </div></div>'
+      + '  <div class="card"><div class="card-title">ASP (좌석사용비)</div>'
+      + '    <div class="fields cols2">'
+      + field('계약 (원)', money(r.aspContract))
+      + field('당월 (원)', money(r.aspCurrent))
+      + fieldBadge('계약대비', r.aspRate)
+      + '<div class="fg"></div>'
+      + '    </div></div>'
+      + '</div>'
+      + '<div class="grid-main">'
+      + '  <div class="card"><div class="card-title">이직율</div>'
+      + '    <div class="fields cols2">'
+      + field('당월 퇴직자', r.resigned)
+      + field('전체인원', r.po)
+      + fieldBadge('이직율', r.turnover)
+      + '    </div></div>'
+      + '  <div class="card"><div class="card-title">비고</div>'
+      + '    <div class="fields"><div class="fg"><textarea class="ro" readonly>' + (r.memo || '') + '</textarea></div></div>'
+      + '  </div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function loadRecords() {
+  var project = document.getElementById('sel-project').value;
+  var viewBody = document.getElementById('view-body');
+  if (!project) {
+    viewBody.innerHTML = '<div class="view-empty">프로젝트를 선택해주세요.</div>'; return;
+  }
+  var rangeVal = document.getElementById('view-range').value;
+  viewBody.innerHTML = '<div class="view-loading">불러오는 중...</div>';
+  var url = GAS_URL + '?action=get&project=' + encodeURIComponent(project);
+  fetch(url)
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var filtered = filterRecords(data, buildRangeFilter(rangeVal));
+      viewBody.innerHTML = renderRecords(filtered);
+    })
+    .catch(function() {
+      viewBody.innerHTML = '<div class="view-err">데이터를 불러오지 못했습니다.</div>';
+    });
+}
+
+
+</script>
+</body>
+</html>
