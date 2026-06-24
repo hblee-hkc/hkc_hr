@@ -390,7 +390,7 @@ function openModal() {
   var ok = required.every(function(id) { return document.getElementById(id).value !== ''; });
   if (!ok) { alert('모든 필수 항목을 입력해주세요.'); return; }
 
-  var project = document.getElementById('sel-project').value;
+  var project = document.getElementById('sel-project');
   var period = document.getElementById('sel-period');
 
   
