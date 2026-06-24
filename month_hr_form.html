@@ -394,7 +394,7 @@ function openModal() {
   var period = document.getElementById('sel-period');
 
   
-  document.getElementById('modal-project').textContent = project;
+  document.getElementById('modal-project').textContent = project.options[project.selectedIndex].textContent;
   document.getElementById('modal-yearmonth').textContent = period.options[period.selectedIndex].textContent;
   document.getElementById('modal-status').textContent = '';
   document.getElementById('modal-status').className = 'modal-status';
