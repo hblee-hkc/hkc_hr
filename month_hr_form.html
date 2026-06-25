@@ -517,7 +517,7 @@ function renderRecords(records) {
     return pa[0] !== pb[0] ? pb[0] - pa[0] : pb[1] - pa[1];
   });
   _cachedRecords = records;
-  return records.map(function(r) {
+  return records.map(function(r, idx) {
     var ymParts = r.yearMonth.split('-');
     var ymLabel = ymParts[0] + '년 ' + ymParts[1] + '월';
     var ro = ' class="ro" readonly';
