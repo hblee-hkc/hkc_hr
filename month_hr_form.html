@@ -80,6 +80,16 @@ body{font-family:sans-serif;background:#f5f5f5;padding:1rem}
 .view-empty{font-size:12px;color:#aaa;text-align:center;padding:2rem 0}
 .view-loading{font-size:12px;color:#888;text-align:center;padding:2rem 0}
 .view-err{font-size:12px;color:#c0392b;text-align:center;padding:1rem 0}
+.pane-view {
+  height: calc(100vh - 2rem);
+  overflow-y: auto;
+  position: sticky;
+  top: 1rem;
+}
+
+/* ── 레코드 불러오기 버튼 ── */
+.rec-load-btn{padding:2px 8px;border:0.5px solid #ccc;border-radius:4px;font-size:10px;background:#fff;color:#111;cursor:pointer}
+.rec-load-btn:hover{background:#f0f0f0}
 
 /* ── 월별 레코드 블록 (폼 형태) ── */
 .rec-block{margin-bottom:16px}
@@ -453,6 +463,7 @@ function doSubmit() {
     document.getElementById('cancel-btn').disabled = false;
     document.getElementById('cancel-btn').textContent = '닫기';
     document.getElementById('confirm-btn').style.display = 'none';
+    recordsCache = null;
   })
   .catch(function() {
     statusEl.textContent = '오류가 발생했습니다. 다시 시도해주세요.';
@@ -494,6 +505,8 @@ function filterRecords(records, rangeFilter) {
   });
 }
 
+var _cachedRecords = [];
+
 function renderRecords(records) {
   if (!records || records.length === 0) {
     return '<div class="view-empty">해당 기간에 제출된 기록이 없습니다.</div>';
@@ -503,6 +516,7 @@ function renderRecords(records) {
     var pb = b.yearMonth.split('-').map(Number);
     return pa[0] !== pb[0] ? pb[0] - pa[0] : pb[1] - pa[1];
   });
+  _cachedRecords = records;
   return records.map(function(r) {
     var ymParts = r.yearMonth.split('-');
     var ymLabel = ymParts[0] + '년 ' + ymParts[1] + '월';
@@ -515,7 +529,7 @@ function renderRecords(records) {
     }
     function money(v) { var n = parseInt(v); return isNaN(n) || n === 0 ? '' : n.toLocaleString('ko-KR'); }
     return '<div class="rec-block">'
-      + '<div class="rec-ym-divider"><span>' + ymLabel + '</span></div>'
+      + '<div class="rec-ym-divider"><span>' + ymLabel + '</span><button class="rec-load-btn" onclick="loadToForm(' + idx + ')">불러오기</button></div>'
       + '<div class="rec-metric-row">'
       + '  <div class="rec-mc"><div class="rec-mc-label">총원율</div><div class="rec-mc-val hi">' + (r.fillRate || '— %') + '</div></div>'
       + '  <div class="rec-mc"><div class="rec-mc-label">직접인건비율</div><div class="rec-mc-val hi">' + (r.laborRate || '— %') + '</div></div>'
@@ -610,6 +624,34 @@ function loadRecords() {
     .catch(function() {
       viewBody.innerHTML = '<div class="view-err">데이터를 불러오지 못했습니다.</div>';
     });  
+}
+
+function loadToForm(idx) {
+  var r = _cachedRecords[idx]
+  function setVal(id, v) { var el = document.getElementById(id); if(el) el.value = v || ''; }
+  function setMoney(id, v) { var n = parseInt(v); setVal(id, isNaN(n) || n === 0 ? '' : n.toLocaleString('ko-KR')); }
+
+  setVal('to', r.to);
+  setVal('po', r.po);
+  setMoney('labor-budget', r.laborBudget);
+  setMoney('labor-actual', r.laborActual);
+  setMoney('edu-budget', r.eduBudget);
+  setMoney('edu-actual', r.eduActual);
+  setMoney('sys-contract', r.sysContract);
+  setMoney('sys-current', r.sysCurrent);
+  setMoney('asp-contract', r.aspContract);
+  setMoney('asp-current', r.aspCurrent);
+  setVal('seat-total', r.seatTotal);
+  setVal('seat-used', r.seatUsed);
+  setVal('resigned', r.resigned);
+  setVal('memo', r.memo);
+  calc();
+
+  // narrow면 폼으로 전환
+  if (document.getElementById('root').classList.contains('layout-narrow')) {
+    viewOpen = false;
+    applyLayout();
+  }
 }
 </script>
 </body>
